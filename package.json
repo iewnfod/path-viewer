@@ -14,8 +14,8 @@
   "commands": [
     {
       "name": "view-dir",
-      "title": "View A Directory",
-      "description": "View all files and folders in the target path",
+      "title": "View Directory",
+      "description": "View all files and folders in the target folder",
       "mode": "view",
       "arguments": [
         {

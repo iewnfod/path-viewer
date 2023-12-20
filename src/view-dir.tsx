@@ -8,7 +8,8 @@ type Preferences = {
   defaultPath: string;
   ignoreName: string;
   showHidden: boolean;
-  appAsFile: boolean
+  appAsFile: boolean;
+  sortType: string;
 }
 const preferences: Preferences = getPreferenceValues();
 
@@ -17,6 +18,22 @@ let ignoreArr: string[] = [];
 preferences.ignoreName.split(',').forEach((name) => {
   ignoreArr.push(name.trim());
 });
+
+// 加载排序方式
+let sortFn: ((a: Path, b: Path) => number) | undefined;
+if (preferences.sortType[0] == 'n') {
+  sortFn = (a: Path, b: Path) => {
+    return a.name.localeCompare(b.name);
+  }
+} else if (preferences.sortType[0] == 'e') {
+  sortFn = (a: Path, b: Path) => {
+    return a.extension.localeCompare(b.extension);
+  }
+}
+let reverse = false;
+if (preferences.sortType[1] == 'd') {
+  reverse = true;
+}
 
 /**
  * 路径类型，用于更方便的储存一些常用的数据
@@ -83,6 +100,15 @@ function loadPath(targetPath: string) {
       }
     }
   });
+  // 排序
+  if (sortFn != undefined) {
+    files.sort(sortFn);
+    folders.sort(sortFn);
+  }
+  if (reverse) {
+    files.reverse();
+    folders.reverse();
+  }
   return { f, files, folders };
 }
 
@@ -147,6 +173,7 @@ function renderList({f, files, folders}: folderData) {
           actions={
             <ActionPanel>
               <Action.Open target={f.stringPath}  title={`Open ${f.name}`}/>
+              <Action.CopyToClipboard content={f.stringPath} title={`Copy Path ti Clipboard`}/>
               <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
             </ActionPanel>
           }
@@ -165,9 +192,9 @@ function renderList({f, files, folders}: folderData) {
           icon={f.getIcon()}
           actions={
             <ActionPanel>
-              <ActionPanel.Section>
-                <IntoFolder p={f} />
-              </ActionPanel.Section>
+              <IntoFolder p={f}/>
+              <Action.CopyToClipboard content={f.stringPath} title={`Copy Path to Clipboard`}/>
+              <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
             </ActionPanel>
           }
         />)}

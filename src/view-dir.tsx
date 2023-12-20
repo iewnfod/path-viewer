@@ -60,10 +60,16 @@ class Path {
    * 获取文件图标
    */
   getIcon() {
+    if (this.extension == '.app') {
+      return Icon.AppWindowGrid2x2;
+    }
     if (this.isFolder) {
       return Icon.Folder;
     } else {
-      return Icon.Link;
+      if (this.extension == '') {
+        return Icon.AppWindowList;
+      }
+      return Icon.Text;
     }
   }
 }
@@ -147,7 +153,8 @@ function pathIsFolderError(errPath: string) {
 function IntoFolder(props: { p: Path }) {
   return (
     <Action.Push
-      title={"Into Folder"}
+      icon={Icon.ArrowRight}
+      title={`Into ${props.p.name}`}
       target={renderList(loadPath(props.p.stringPath))}
     />
   );

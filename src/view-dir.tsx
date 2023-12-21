@@ -101,11 +101,35 @@ function loadPath(targetPath: string) {
         if (pathItem.isFolder) {
           folders.push(pathItem);
         } else {
+  try {
+    fs.readdirSync(targetPath).forEach((f) => {
+      // 如果要被忽略，那就退出
+      if (ignoreArr.indexOf(f) >= 0) {
+        return;
+      }
+      // 如果是.开头的文件或文件夹，说明他是隐藏文件，并且用户没有选择显示隐藏文件，才能隐藏
+      if (f.startsWith('.') && !preferences.showHidden) {
+        return;
+      }
+      let newPath = path.join(targetPath, f);
+      let pathItem = new Path(newPath);
+      if (pathItem.exists) {
+        if (pathItem.extension === '.app' && preferences.appAsFile) {
           files.push(pathItem);
+        } else {
+          if (pathItem.isFolder) {
+            folders.push(pathItem);
+          } else {
+            files.push(pathItem);
+          }
         }
       }
-    }
-  });
+    });
+  } catch (e) {
+    let item = new Path('');
+    item.name = `Permission denied to scan \`${f.stringPath}\``;
+    files.push(item);
+  }
   // 排序
   if (sortFn != undefined) {
     files.sort(sortFn);

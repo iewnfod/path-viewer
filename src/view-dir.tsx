@@ -233,8 +233,24 @@ function renderList({f, files, folders}: folderData) {
     );
   }
 
+  let backToLast;
+  if (f.parent && f.stringPath != '/') {
+    backToLast = (
+      <List.Item
+        title={"Back to Last"}
+        icon={Icon.ArrowLeft}
+        actions={
+          <ActionPanel>
+            <IntoFolder p={new Path(f.parent)}/>
+          </ActionPanel>
+        }
+      />
+    );
+  }
+
   return (
     <List navigationTitle={f.stringPath}>
+      {backToLast}
       {fileList}
       {folderList}
     </List>

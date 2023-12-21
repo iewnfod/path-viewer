@@ -7,13 +7,13 @@ import { runAppleScript } from "@raycast/utils";
 async function openFile(p: Path) {
   if (p.stringPath == '') return;
   let belongUser = await ifPathBelongToUser(p);
-  let addition = '';
   if (!belongUser) {
     if (await confirmAlert({title: `\`${p.name}\` is not belong to you, do you want to open it with root?`})) {
-      addition = 'sudo';
+      runAppleScript(`do shell script "sudo open '${p.stringPath}'"`).then().catch();
     }
+  } else {
+    runAppleScript(`do shell script "open '${p.stringPath}'"`).then().catch();
   }
-  runAppleScript(`do shell script "${addition} open '${p.stringPath}'"`).then().catch();
 }
 
 async function ifPathBelongToUser(p: Path) {

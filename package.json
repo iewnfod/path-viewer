@@ -34,7 +34,7 @@
       "title": "Default View Path",
       "description": "The path that will be viewed when no path entered",
       "required": true,
-      "default": "/"
+      "default": "~/"
     },
     {
       "type": "textfield",

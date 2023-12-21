@@ -1,7 +1,50 @@
-import { Action, ActionPanel, Detail, getPreferenceValues, Icon, LaunchProps, List } from "@raycast/api";
+import { Action, ActionPanel, confirmAlert, Detail, getPreferenceValues, Icon, LaunchProps, List } from "@raycast/api";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
+import { runAppleScript } from "@raycast/utils";
+
+async function openFile(p: Path) {
+  if (p.stringPath == '') return;
+  let belongUser = await ifPathBelongToUser(p);
+  let addition = '';
+  if (!belongUser) {
+    if (await confirmAlert({title: `\`${p.name}\` is not belong to you, do you want to open it with root?`})) {
+      addition = 'sudo';
+    }
+  }
+  runAppleScript(`do shell script "${addition} open '${p.stringPath}'"`).then().catch();
+}
+
+async function ifPathBelongToUser(p: Path) {
+  let appleScript = `
+  -- 要检查的文件路径
+set filePath to "${p.stringPath}"
+
+-- 目标用户
+set targetUser to "${os.userInfo().username}"
+
+-- 获取文件的所有者
+
+set fileOwner to (do shell script "stat -f %Su " & quoted form of filePath)
+
+-- 检查文件的所有者是否与目标用户匹配
+if fileOwner is equal to targetUser then
+    set result to "true"
+else
+    set result to "false"
+end if
+
+do shell script "echo " & quoted form of result
+  `;
+  try {
+    const result = await runAppleScript(appleScript);
+    console.log(result);
+    return result == 'true';
+  } catch (e) {
+    console.log(e);
+  }
+}
 
 // 读取偏好设置
 type Preferences = {
@@ -46,12 +89,14 @@ class Path {
   public stringPath: string;
   public exists: boolean;
   public isFolder?: boolean;
+  public parent?: string;
   constructor(public p: string) {
     this.stringPath = p;
     this.name = path.basename(p);
     this.extension = path.extname(p);
     this.exists = fs.existsSync(p);
     if (this.exists) {
+      this.parent = path.dirname(p);
       this.isFolder = fs.statSync(p).isDirectory();
     }
   }
@@ -83,24 +128,6 @@ function loadPath(targetPath: string) {
   let folders: Path[] = [];
   let f = new Path(targetPath);
   // 遍历文件夹
-  fs.readdirSync(targetPath).forEach((f) => {
-    // 如果要被忽略，那就退出
-    if (ignoreArr.indexOf(f) >= 0) {
-      return;
-    }
-    // 如果是.开头的文件或文件夹，说明他是隐藏文件，并且用户没有选择显示隐藏文件，才能隐藏
-    if (f.startsWith('.') && !preferences.showHidden) {
-      return;
-    }
-    let newPath = path.join(targetPath, f);
-    let pathItem = new Path(newPath);
-    if (pathItem.exists) {
-      if (pathItem.extension === '.app' && preferences.appAsFile) {
-        files.push(pathItem);
-      } else {
-        if (pathItem.isFolder) {
-          folders.push(pathItem);
-        } else {
   try {
     fs.readdirSync(targetPath).forEach((f) => {
       // 如果要被忽略，那就退出
@@ -203,7 +230,7 @@ function renderList({f, files, folders}: folderData) {
           icon={f.getIcon()}
           actions={
             <ActionPanel>
-              <Action.Open target={f.stringPath}  title={`Open ${f.name}`}/>
+              <Action title={`Open ${f.stringPath}`} onAction={() => openFile(f)}/>
               <Action.CopyToClipboard content={f.stringPath} title={`Copy Path ti Clipboard`}/>
               <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
             </ActionPanel>

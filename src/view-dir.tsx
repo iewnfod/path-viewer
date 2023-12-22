@@ -4,6 +4,10 @@ import * as fs from "fs";
 import * as os from "os";
 import { runAppleScript } from "@raycast/utils";
 
+/**
+ * 使用系统默认方式打开文件
+ * @param p 目标文件路径实例
+ */
 async function openFile(p: Path) {
   if (p.stringPath == '') return;
   let belongUser = await ifPathBelongToUser(p);
@@ -16,19 +20,16 @@ async function openFile(p: Path) {
   }
 }
 
+/**
+ * 判断文件的所有者是否是当前用户
+ * @param p 目标文件路径实例
+ */
 async function ifPathBelongToUser(p: Path) {
   let appleScript = `
-  -- 要检查的文件路径
 set filePath to "${p.stringPath}"
-
--- 目标用户
 set targetUser to "${os.userInfo().username}"
-
--- 获取文件的所有者
-
 set fileOwner to (do shell script "stat -f %Su " & quoted form of filePath)
 
--- 检查文件的所有者是否与目标用户匹配
 if fileOwner is equal to targetUser then
     set result to "true"
 else
@@ -39,7 +40,6 @@ do shell script "echo " & quoted form of result
   `;
   try {
     const result = await runAppleScript(appleScript);
-    console.log(result);
     return result == 'true';
   } catch (e) {
     console.log(e);
@@ -93,6 +93,7 @@ class Path {
   constructor(public p: string) {
     this.stringPath = p;
     this.name = path.basename(p);
+    if (this.name == '') this.name = 'root';
     this.extension = path.extname(p);
     this.exists = fs.existsSync(p);
     if (this.exists) {
@@ -201,11 +202,15 @@ function pathIsFolderError(errPath: string) {
  * 用于进入文件夹
  * @param props 包含一个参数`p`为需要进入的目录路径
  */
-function IntoFolder(props: { p: Path }) {
+function IntoFolder(props: { p: Path, back?: boolean}) {
+  let title = `Into ${props.p.name}`;
+  if (props.back) {
+    title = `Back to ${props.p.name}`;
+  }
   return (
     <Action.Push
       icon={Icon.ArrowRight}
-      title={`Into ${props.p.name}`}
+      title={title}
       target={renderList(loadPath(props.p.stringPath))}
     />
   );
@@ -230,8 +235,8 @@ function renderList({f, files, folders}: folderData) {
           icon={f.getIcon()}
           actions={
             <ActionPanel>
-              <Action title={`Open ${f.stringPath}`} onAction={() => openFile(f)}/>
-              <Action.CopyToClipboard content={f.stringPath} title={`Copy Path ti Clipboard`}/>
+              <Action title={`Open ${f.name}`} onAction={() => openFile(f)}/>
+              <Action.CopyToClipboard content={f.stringPath} title={`Copy Path to Clipboard`}/>
               <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
             </ActionPanel>
           }
@@ -262,13 +267,14 @@ function renderList({f, files, folders}: folderData) {
 
   let backToLast;
   if (f.parent && f.stringPath != '/') {
+    let parentPath = new Path(f.parent);
     backToLast = (
       <List.Item
-        title={"Back to Last"}
+        title={`Back to ${parentPath.name}`}
         icon={Icon.ArrowLeft}
         actions={
           <ActionPanel>
-            <IntoFolder p={new Path(f.parent)}/>
+            <IntoFolder p={parentPath} back={true}/>
           </ActionPanel>
         }
       />

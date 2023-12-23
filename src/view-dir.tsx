@@ -16,7 +16,17 @@ function openFile(p: Path) {
 async function openSudo(p: Path) {
   if (p.stringPath == '') return;
   if (await confirmAlert({title: `Are you sure that you want to open \`${p.name}\` with root?`})) {
-    runAppleScript(`do shell script "sudo open '${p.stringPath}'"`).then().catch();
+    try {
+      await runAppleScript(`do shell script "sudo open '${p.stringPath}'"`)
+    } catch (e) {
+      const md = `
+Add \`auth sufficient pam_tid.so\` into \`/etc/pam.d/sudo\` to allow fingerprint when authorizing \`sudo\` statement
+        `;
+      confirmAlert({
+        title: `Failed to open \`${p.name}\` with sudo`,
+        message: md,
+      }).then().catch();
+    }
   }
 }
 

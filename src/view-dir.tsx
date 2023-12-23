@@ -8,41 +8,15 @@ import { runAppleScript } from "@raycast/utils";
  * 使用系统默认方式打开文件
  * @param p 目标文件路径实例
  */
-async function openFile(p: Path) {
+function openFile(p: Path) {
   if (p.stringPath == '') return;
-  let belongUser = await ifPathBelongToUser(p);
-  if (!belongUser) {
-    if (await confirmAlert({title: `\`${p.name}\` is not belong to you, do you want to open it with root?`})) {
-      runAppleScript(`do shell script "sudo open '${p.stringPath}'"`).then().catch();
-    }
-  } else {
-    runAppleScript(`do shell script "open '${p.stringPath}'"`).then().catch();
-  }
+  runAppleScript(`do shell script "open '${p.stringPath}'"`).then().catch();
 }
 
-/**
- * 判断文件的所有者是否是当前用户
- * @param p 目标文件路径实例
- */
-async function ifPathBelongToUser(p: Path) {
-  let appleScript = `
-set filePath to "${p.stringPath}"
-set targetUser to "${os.userInfo().username}"
-set fileOwner to (do shell script "stat -f %Su " & quoted form of filePath)
-
-if fileOwner is equal to targetUser then
-    set result to "true"
-else
-    set result to "false"
-end if
-
-do shell script "echo " & quoted form of result
-  `;
-  try {
-    const result = await runAppleScript(appleScript);
-    return result == 'true';
-  } catch (e) {
-    console.log(e);
+async function openSudo(p: Path) {
+  if (p.stringPath == '') return;
+  if (await confirmAlert({title: `Are you sure that you want to open \`${p.name}\` with root?`})) {
+    runAppleScript(`do shell script "sudo open '${p.stringPath}'"`).then().catch();
   }
 }
 
@@ -235,8 +209,9 @@ function renderList({f, files, folders}: folderData) {
           icon={f.getIcon()}
           actions={
             <ActionPanel>
-              <Action title={`Open ${f.name}`} onAction={() => openFile(f)}/>
+              <Action title={`Open ${f.name}`} onAction={() => openFile(f)} icon={Icon.ArrowRight}/>
               <Action.CopyToClipboard content={f.stringPath} title={`Copy Path to Clipboard`}/>
+              <Action title={`Open ${f.name} with sudo`} onAction={() => openSudo(f)} icon={Icon.ArrowRight}/>
               <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
             </ActionPanel>
           }

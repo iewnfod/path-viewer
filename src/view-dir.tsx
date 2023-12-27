@@ -260,7 +260,7 @@ function renderList({f, files, folders}: folderData) {
         actions={
           <ActionPanel>
             <IntoFolder p={parentPath} back={true}/>
-            <Action.ShowInFinder path={f.parent} title={`Show Parent in Finder`}/>
+            <Action.ShowInFinder path={f.stringPath} title={`Show Parent in Finder`}/>
           </ActionPanel>
         }
       />

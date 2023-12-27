@@ -220,9 +220,9 @@ function renderList({f, files, folders}: folderData) {
           actions={
             <ActionPanel>
               <Action title={`Open ${f.name}`} onAction={() => openFile(f)} icon={Icon.ArrowRight}/>
+              <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
               <Action.CopyToClipboard content={f.stringPath} title={`Copy Path to Clipboard`}/>
               <Action title={`Open ${f.name} with sudo`} onAction={() => openSudo(f)} icon={Icon.ArrowRight}/>
-              <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
             </ActionPanel>
           }
         />)}
@@ -241,8 +241,8 @@ function renderList({f, files, folders}: folderData) {
           actions={
             <ActionPanel>
               <IntoFolder p={f}/>
-              <Action.CopyToClipboard content={f.stringPath} title={`Copy Path to Clipboard`}/>
               <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
+              <Action.CopyToClipboard content={f.stringPath} title={`Copy Path to Clipboard`}/>
             </ActionPanel>
           }
         />)}
@@ -260,6 +260,7 @@ function renderList({f, files, folders}: folderData) {
         actions={
           <ActionPanel>
             <IntoFolder p={parentPath} back={true}/>
+            <Action.ShowInFinder path={f.parent} title={`Show Parent in Finder`}/>
           </ActionPanel>
         }
       />

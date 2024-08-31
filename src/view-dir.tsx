@@ -1,8 +1,9 @@
-import { Action, ActionPanel, confirmAlert, Detail, getPreferenceValues, Icon, LaunchProps, List } from "@raycast/api";
+import { Action, ActionPanel, confirmAlert, Detail, getPreferenceValues, Icon, Keyboard, LaunchProps, List } from "@raycast/api";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 import { runAppleScript } from "@raycast/utils";
+import Shortcut = Keyboard.Shortcut;
 
 /**
  * 使用系统默认方式打开文件
@@ -196,6 +197,21 @@ function IntoFolder(props: { p: Path, back?: boolean}) {
       icon={Icon.ArrowRight}
       title={title}
       target={renderList(loadPath(props.p.stringPath))}
+      shortcut={{modifiers: ['cmd'], key: ']'}}
+    />
+  );
+}
+
+function BackToParent(props: { p: Path }) {
+  let p = loadPath(props.p.parent || props.p.stringPath);
+  let pp = loadPath(p.f.parent || p.f.stringPath || props.p.stringPath);
+
+  return (
+    <Action.Push
+      icon={Icon.ArrowLeft}
+      title={`Back to ${pp.f.name}`}
+      target={renderList(pp)}
+      shortcut={{modifiers: ['cmd'], key: '['}}
     />
   );
 }
@@ -220,9 +236,10 @@ function renderList({f, files, folders}: folderData) {
           actions={
             <ActionPanel>
               <Action title={`Open ${f.name}`} onAction={() => openFile(f)} icon={Icon.ArrowRight}/>
-              <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
+              <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`} shortcut={{modifiers: ['cmd'], key: 'enter'}}/>
+              <BackToParent p={f}/>
               <Action.CopyToClipboard content={f.stringPath} title={`Copy Path to Clipboard`}/>
-              <Action title={`Open ${f.name} with sudo`} onAction={() => openSudo(f)} icon={Icon.ArrowRight}/>
+              <Action title={`Open with sudo`} onAction={() => openSudo(f)} icon={Icon.ArrowRight}/>
             </ActionPanel>
           }
         />)}
@@ -241,7 +258,8 @@ function renderList({f, files, folders}: folderData) {
           actions={
             <ActionPanel>
               <IntoFolder p={f}/>
-              <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`}/>
+              <Action.ShowInFinder path={f.stringPath} title={`Show in Finder`} shortcut={{modifiers: ['cmd'], key: 'enter'}}/>
+              <BackToParent p={f}/>
               <Action.CopyToClipboard content={f.stringPath} title={`Copy Path to Clipboard`}/>
             </ActionPanel>
           }
@@ -250,26 +268,26 @@ function renderList({f, files, folders}: folderData) {
     );
   }
 
-  let backToLast;
-  if (f.parent && f.stringPath != '/') {
-    let parentPath = new Path(f.parent);
-    backToLast = (
-      <List.Item
-        title={`Back to ${parentPath.name}`}
-        icon={Icon.ArrowLeft}
-        actions={
-          <ActionPanel>
-            <IntoFolder p={parentPath} back={true}/>
-            <Action.ShowInFinder path={f.stringPath} title={`Show Parent in Finder`}/>
-          </ActionPanel>
-        }
-      />
-    );
-  }
+  // let backToLast;
+  // if (f.parent && f.stringPath != '/') {
+  //   let parentPath = new Path(f.parent);
+  //   backToLast = (
+  //     <List.Item
+  //       title={`Back to ${parentPath.name}`}
+  //       icon={Icon.ArrowLeft}
+  //       actions={
+  //         <ActionPanel>
+  //           <IntoFolder p={parentPath} back={true}/>
+  //           <Action.ShowInFinder path={f.stringPath} title={`Show Parent in Finder`}/>
+  //         </ActionPanel>
+  //       }
+  //     />
+  //   );
+  // }
 
   return (
     <List navigationTitle={f.stringPath}>
-      {backToLast}
+      {/*{backToLast}*/}
       {fileList}
       {folderList}
     </List>
@@ -291,7 +309,7 @@ function resolvePath(p: string) {
 
 export default function Command(props: LaunchProps<{ arguments: Arguments.ViewDir }>) {
   // 读取并预处理输入
-  let targetPath = props.arguments.path;
+  let targetPath = props.arguments.path.trim();
   if (targetPath === '') {
     targetPath = preferences.defaultPath;
   }
